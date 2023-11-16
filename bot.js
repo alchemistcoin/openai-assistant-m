@@ -32,46 +32,51 @@ client.once('ready', () => {
     console.log('Bot is ready!');
 });
 
-// Create a Map to store user thread IDs to avoid creating new threads for existing conversations
-const userThreadMap = new Map();
+client.on('guildCreate', guild => {
+  // Code to send a message when the bot joins a new guild
+  // ...
+});
 
-// Function to get thread ID for the user
-const getOrCreateThreadIdForUser = async (userId) => {
-    if (userThreadMap.has(userId)) {
-        return userThreadMap.get(userId);
-    } else {
-        const thread = await openai.createChat();
-        userThreadMap.set(userId, thread.id);
-        return thread.id;
-    }
-};
+// Use this function to create a new session or return existing one based on your application logic.
+// Placeholder for initiating an OpenAI Chat session.
+async function initiateOpenAiSession(modelId, userMessage, discordThreadId) {
+  // Placeholder for generating a unique session ID. Replace with actual OpenAI chat session initialization if necessary.
+  // For actual chat sessions, you might need to store an ongoing conversation state in Firestore.
+  // Currently, this is a simplified example that generates a unique ID for each message.
+  return `session_${discordThreadId}_${Date.now()}`;
+}
 
-// This event will run every time a message is received
+// Update the messageCreate event handling
 client.on('messageCreate', async message => {
-    if (message.author.bot || !message.content.trim()) return; // Ignore bot messages
+  // ... existing checks for bot message and empty content ...
 
-    try {
-        // Get or create a thread ID for this user
-        const threadId = await getOrCreateThreadIdForUser(message.author.id);
+  try {
+    // Remove or comment out the following lines that are no longer necessary:
+    // const thread = await openai.createChat();
+    // await openai.addMessageToThread(threadId, { role: "user", content: message.content });
+    // const messages = await openai.listMessagesInThread(threadId);
+    
+    // Call the new initiateOpenAiSession function and handle the OpenAI conversation
+    const discordThreadId = message.channel.id;
+    const sessionID = await initiateOpenAiSession(MODEL_ID, message.content, discordThreadId);
+    
+    // Now send the message to OpenAI API and await the response
+    const openaiResponse = await openai.createCompletion({
+      model: gpt-4-1106-preview,
+      prompt: message.content, // Ensure to include the context if needed
+      // ... other params ...
+    });
+    
+    // Reply to the Discord message with the OpenAI response
+    // Ensure to check the structure of openaiResponse to extract the actual message
+    const responseText = openaiResponse.data.choices[0].text;
+    await message.reply(responseText);
 
-        // Add the user's message to the thread
-        await openai.addMessageToThread(threadId, {
-            role: "user",
-            content: message.content
-        });
-
-        // List messages in the thread to get the assistant's response
-        const messages = await openai.listMessagesInThread(threadId);
-
-        // Find the latest message from the assistant
-        const latestMessageFromAssistant = messages.data.find(msg => msg.role === 'assistant');
-
-        // Reply to the Discord message with the response from OpenAI
-        await message.reply(latestMessageFromAssistant.content);
-
-    } catch (error) {
-        console.error('Error during message handling:', error);
-    }
+  } catch (error) {
+    console.error('Error during message handling:', error);
+    // Optionally send an error message to the Discord channel
+    await message.reply('I encountered an error while processing your request.');
+  }
 });
 
 // Authenticate Discord
