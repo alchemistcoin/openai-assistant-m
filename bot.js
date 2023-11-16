@@ -48,6 +48,8 @@ async function initiateOpenAiSession(modelId, userMessage, discordThreadId) {
 
 // Update the messageCreate event handling
 client.on('messageCreate', async message => {
+    // Ignore messages from all bots, including itself
+  if (message.author.bot) return;
   // ... existing checks for bot message and empty content ...
 
   try {
@@ -72,11 +74,14 @@ client.on('messageCreate', async message => {
     const responseText = openaiResponse.data.choices[0].text;
     await message.reply(responseText);
 
-  } catch (error) {
-    console.error('Error during message handling:', error);
-    // Optionally send an error message to the Discord channel
-    await message.reply('I encountered an error while processing your request.');
-  }
+ } catch (error) {
+  console.error('An error occurred:', error);
+  // Optionally, you can also log the stack trace if it exists
+  if (error.stack) console.error(error.stack);
+
+  // Send a reply to the Discord channel to notify of the encountered error
+  await message.reply('I encountered an error while processing your request.');
+}
 });
 
 // Authenticate Discord
