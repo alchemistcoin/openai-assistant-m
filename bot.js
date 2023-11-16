@@ -111,3 +111,15 @@ client.on('messageCreate', async message => {
 
 // Authenticate Discord
 client.login(process.env.DISCORD_TOKEN);
+
+// Start minimal Express HTTP server for Render.com health checks
+const app = express();
+const port = process.env.PORT || 3000;  // Render provides PORT env variable
+
+app.get('/', (req, res) => {
+  res.send('Discord bot is running and healthy'); // Simple response for health checks
+});
+
+app.listen(port, () => {
+  console.log(`HTTP server is listening on port ${port}`);
+});
