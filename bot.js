@@ -1,8 +1,16 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const { OpenAI } = require("openai");
+const { Pool } = require('pg');
+const express = require('express');
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
+});
+
+// Set up a new PostgreSQL connection pool using the provided URI
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL // Use the connection string provided by Render's PostgreSQL service
+  // No need for an SSL configuration if you use Render's internal connection string
 });
 
 // Discord Client
@@ -26,14 +34,23 @@ client.once('ready', () => {
 
 const threadMap = {};
 
-const getOpenAiThreadId = (discordThreadId) => {
-    // Replace this in-memory implementation with a database (e.g. DynamoDB, Firestore, Redis)
-    return threadMap[discordThreadId];
-}
+const getOpenAiThreadId = async (discordThreadId) => {
+  try {
+    const result = await pool.query('SELECT open_ai_thread_id FROM thread_mapping WHERE discord_thread_id = $1', [discordThreadId]);
+    return result.rows[0] ? result.rows[0].open_ai_thread_id : null;
+  } catch (err) {
+    console.error('Error fetching OpenAI thread ID:', err);
+    return null;
+  }
+};
 
-const addThreadToMap = (discordThreadId, openAiThreadId) => {
-    threadMap[discordThreadId] = openAiThreadId;
-}
+const addThreadToMap = async (discordThreadId, openAiThreadId) => {
+  try {
+    await pool.query('INSERT INTO thread_mapping (discord_thread_id, open_ai_thread_id) VALUES ($1, $2) ON CONFLICT (discord_thread_id) DO UPDATE SET open_ai_thread_id = EXCLUDED.open_ai_thread_id', [discordThreadId, openAiThreadId]);
+  } catch (err) {
+    console.error('Error updating thread mapping:', err);
+  }
+};
 
 const terminalStates = ["cancelled", "failed", "completed", "expired"];
 const statusCheckLoop = async (openAiThreadId, runId) => {
