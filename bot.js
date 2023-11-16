@@ -1,17 +1,18 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const { OpenAI } = require("openai");
-const { Pool } = require('pg');
+const admin = require('firebase-admin');
 const express = require('express');
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
-// Set up a new PostgreSQL connection pool using the provided URI
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL // Use the connection string provided by Render's PostgreSQL service
-  // No need for an SSL configuration if you use Render's internal connection string
+// Initialize Firebase Admin SDK with the encoded service account JSON
+const serviceAccount = JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString('ascii'));
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
 });
+const db = admin.firestore(); // Reference to Firestore database
 
 // Discord Client
 const client = new Client({
@@ -36,19 +37,21 @@ const threadMap = {};
 
 const getOpenAiThreadId = async (discordThreadId) => {
   try {
-    const result = await pool.query('SELECT open_ai_thread_id FROM thread_mapping WHERE discord_thread_id = $1', [discordThreadId]);
-    return result.rows[0] ? result.rows[0].open_ai_thread_id : null;
+    const docRef = db.collection('thread_mapping').doc(discordThreadId);
+    const doc = await docRef.get();
+    return doc.exists ? doc.data().open_ai_thread_id : null;
   } catch (err) {
-    console.error('Error fetching OpenAI thread ID:', err);
+    console.error('Error fetching OpenAI thread ID from Firestore:', err);
     return null;
   }
 };
 
 const addThreadToMap = async (discordThreadId, openAiThreadId) => {
   try {
-    await pool.query('INSERT INTO thread_mapping (discord_thread_id, open_ai_thread_id) VALUES ($1, $2) ON CONFLICT (discord_thread_id) DO UPDATE SET open_ai_thread_id = EXCLUDED.open_ai_thread_id', [discordThreadId, openAiThreadId]);
+    const docRef = db.collection('thread_mapping').doc(discordThreadId);
+    await docRef.set({ open_ai_thread_id: openAiThreadId }, { merge: true });
   } catch (err) {
-    console.error('Error updating thread mapping:', err);
+    console.error('Error updating thread mapping in Firestore:', err);
   }
 };
 
