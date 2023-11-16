@@ -27,106 +27,51 @@ const sleep = (ms) => {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// When discord bot has started up
+// When the bot is ready, this event will run once.
 client.once('ready', () => {
     console.log('Bot is ready!');
 });
 
+// Create a Map to store user thread IDs to avoid creating new threads for existing conversations
+const userThreadMap = new Map();
 
-const threadMap = {};
-
-const getOpenAiThreadId = async (discordThreadId) => {
-  try {
-    const docRef = db.collection('thread_mapping').doc(discordThreadId);
-    const doc = await docRef.get();
-    return doc.exists ? doc.data().open_ai_thread_id : null;
-  } catch (err) {
-    console.error('Error fetching OpenAI thread ID from Firestore:', err);
-    return null;
-  }
-};
-
-const addThreadToMap = async (discordThreadId, openAiThreadId) => {
-  try {
-    const docRef = db.collection('thread_mapping').doc(discordThreadId);
-    await docRef.set({ open_ai_thread_id: openAiThreadId }, { merge: true });
-  } catch (err) {
-    console.error('Error updating thread mapping in Firestore:', err);
-  }
-};
-
-const terminalStates = ["cancelled", "failed", "completed", "expired"];
-const statusCheckLoop = async (openAiThreadId, runId) => {
-    const run = await openai.beta.threads.runs.retrieve(
-        openAiThreadId,
-        runId
-    );
-
-    if(terminalStates.indexOf(run.status) < 0){
-        await sleep(1000);
-        return statusCheckLoop(openAiThreadId, runId);
+// Function to get thread ID for the user
+const getOrCreateThreadIdForUser = async (userId) => {
+    if (userThreadMap.has(userId)) {
+        return userThreadMap.get(userId);
+    } else {
+        const thread = await openai.createChat();
+        userThreadMap.set(userId, thread.id);
+        return thread.id;
     }
-    // console.log(run);
-
-    return run.status;
-}
-
-const addMessage = (threadId, content) => {
-    // console.log(content);
-    return openai.beta.threads.messages.create(
-        threadId,
-        { role: "user", content }
-    )
-}
+};
 
 // This event will run every time a message is received
 client.on('messageCreate', async message => {
-    if (message.author.bot || !message.content || message.content === '') return; // Ignore bot messages
+    if (message.author.bot || !message.content.trim()) return; // Ignore bot messages
 
-    const discordThreadId = message.channel.id;
-    let openAiThreadId = await getOpenAiThreadId(discordThreadId);  // Make sure to use await here!
+    try {
+        // Get or create a thread ID for this user
+        const threadId = await getOrCreateThreadIdForUser(message.author.id);
 
-    let messagesLoaded = false;
-    if (!openAiThreadId) {
-        const thread = await openai.createChat();  // Updated method to create a chat
-        openAiThreadId = thread.id;
-        await addThreadToMap(discordThreadId, openAiThreadId);  // Make sure to use await here!
-        if(message.channel.isThread()){
-            //Gather all thread messages to fill out the OpenAI thread since we haven't seen this one yet
-            const starterMsg = await message.channel.fetchStarterMessage();
-            const otherMessagesRaw = await message.channel.messages.fetch();
+        // Add the user's message to the thread
+        await openai.addMessageToThread(threadId, {
+            role: "user",
+            content: message.content
+        });
 
-            const otherMessages = Array.from(otherMessagesRaw.values())
-                .map(msg => msg.content)
-                .reverse(); //oldest first
+        // List messages in the thread to get the assistant's response
+        const messages = await openai.listMessagesInThread(threadId);
 
-            const messages = [starterMsg.content, ...otherMessages]
-                .filter(msg => !!msg && msg !== '')
+        // Find the latest message from the assistant
+        const latestMessageFromAssistant = messages.data.find(msg => msg.role === 'assistant');
 
-            // console.log(messages);
-            await Promise.all(messages.map(msg => addMessage(openAiThreadId, msg)));
-            messagesLoaded = true;
-        }
+        // Reply to the Discord message with the response from OpenAI
+        await message.reply(latestMessageFromAssistant.content);
+
+    } catch (error) {
+        console.error('Error during message handling:', error);
     }
-
-    // console.log(openAiThreadId);
-    if(!messagesLoaded){ //If this is for a thread, assume msg was loaded via .fetch() earlier
-        await addMessage(openAiThreadId, message.content);
-    }
-
-    const run = await openai.beta.threads.runs.create(
-        openAiThreadId,
-        { assistant_id: process.env.ASSISTANT_ID }
-    )
-    const status = await statusCheckLoop(openAiThreadId, run.id);
-
-    const messages = await openai.beta.threads.messages.list(openAiThreadId);
-    let response = messages.data[0].content[0].text.value;
-    response = response.substring(0, 1999) //Discord msg length limit when I was testing
-
-    console.log(response);
-    
-    message.reply(response);
 });
 
 // Authenticate Discord
