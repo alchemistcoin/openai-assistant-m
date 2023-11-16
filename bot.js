@@ -74,16 +74,6 @@ client.on('messageCreate', async message => {
     const responseText = openaiResponse.data.choices[0].text;
     await message.reply(responseText);
 
- } catch (error) {
-  console.error('An error occurred:', error);
-  // Optionally, you can also log the stack trace if it exists
-  if (error.stack) console.error(error.stack);
-
-  // Send a reply to the Discord channel to notify of the encountered error
-  await message.reply('I encountered an error while processing your request.');
-}
-});
-
 // Authenticate Discord
 client.login(process.env.DISCORD_TOKEN);
 
