@@ -21,7 +21,7 @@
     "discord.js": "^14.13.0",
     "dotenv": "^16.3.1",
     "openai": "^4.16.2",
-    "express": "^4.18.2" // Use the correct version here
+    "express": "^4.18.2",
     "firebase-admin": "^11.11.0"
   }
 }
