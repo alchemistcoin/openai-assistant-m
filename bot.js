@@ -81,16 +81,16 @@ const addMessage = (threadId, content) => {
 
 // This event will run every time a message is received
 client.on('messageCreate', async message => {
-    if (message.author.bot || !message.content || message.content === '') return; //Ignore bot messages
-    // console.log(message);
+    if (message.author.bot || !message.content || message.content === '') return; // Ignore bot messages
+
     const discordThreadId = message.channel.id;
-    let openAiThreadId = getOpenAiThreadId(discordThreadId);
+    let openAiThreadId = await getOpenAiThreadId(discordThreadId);  // Make sure to use await here!
 
     let messagesLoaded = false;
-    if(!openAiThreadId){
-        const thread = await openai.beta.threads.create();
+    if (!openAiThreadId) {
+        const thread = await openai.createChat();  // Updated method to create a chat
         openAiThreadId = thread.id;
-        addThreadToMap(discordThreadId, openAiThreadId);
+        await addThreadToMap(discordThreadId, openAiThreadId);  // Make sure to use await here!
         if(message.channel.isThread()){
             //Gather all thread messages to fill out the OpenAI thread since we haven't seen this one yet
             const starterMsg = await message.channel.fetchStarterMessage();
