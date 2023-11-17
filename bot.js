@@ -2,6 +2,7 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const { OpenAI } = require("openai");
 const admin = require('firebase-admin');
 const express = require('express');
+const MODEL_ID = "gpt-4-1106-preview";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
