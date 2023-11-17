@@ -2,21 +2,17 @@
   "name": "philosophers-scroll",
   "version": "1.0.0",
   "description": "This Discord bot integrates with the OpenAI API Assistant to interact with users in a Discord server as if it was the assistant itself. When a user mentions the bot or interacts with it via direct messages, it responds using the sophisticated AI capabilities provided by OpenAI.",
-  "main": "index.js",
+  "main": "bot.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/VoloBuilds/openai-assistants-discord-bot.git"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/VoloBuilds/openai-assistants-discord-bot/issues"
-  },
-  "homepage": "https://github.com/VoloBuilds/openai-assistants-discord-bot#readme",
+ 
   "dependencies": {
     "discord.js": "^14.13.0",
     "dotenv": "^16.3.1",
