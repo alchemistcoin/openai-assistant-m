@@ -4,7 +4,7 @@ const admin = require('firebase-admin');
 const express = require('express');
 
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY
 });
 
 const serviceAccount = JSON.parse(Buffer.from(process.env.FIREBASE_SERVICEACCOUNT, 'base64').toString('ascii'));
@@ -15,41 +15,41 @@ const db = admin.firestore();
 
 const client = new Client({
   intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ]
 });
 
 const sleep = (ms) => {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
 
 client.once('ready', () => {
-    console.log('Bot is ready!');
+  console.log('Bot is ready!');
 });
 
-client.on('guildCreate', guild => {
+client.on('guildCreate', (guild) => {
   // Code for new guild
 });
 
 async function initiateOpenAiSession(modelId, userMessage, discordThreadId) {
-  return `session${discordThreadId}_${Date.now()};
+  return `session${discordThreadId}_${Date.now()}`;
 }
 
-client.on('messageCreate', async message => {
+client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
   try {
     const discordThreadId = message.channel.id;
     const sessionID = await initiateOpenAiSession("MODEL_ID", message.content, discordThreadId);
-    
+
     const openaiResponse = await openai.createCompletion({
       model: "gpt-4-1106-preview",
       prompt: message.content,
       // other params
     });
-    
+
     const responseText = openaiResponse.data.choices[0].text;
     await message.reply(responseText);
   } catch (error) {
@@ -69,5 +69,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(HTTP server is listening on port ${port}`);
+  console.log(`HTTP server is listening on port ${port}`);
 });
