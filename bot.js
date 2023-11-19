@@ -123,6 +123,7 @@ client.on('messageCreate', async message => {
       if(!messagesLoaded) {
           const runActive = await isRunActive(openAiThreadId);
           if (!runActive) {
+            try {
               await addMessage(openAiThreadId, message.content);
 
               const run = await openai.beta.threads.runs.create(
@@ -137,7 +138,12 @@ client.on('messageCreate', async message => {
 
               console.log(response);
               
-              message.reply(response);
+              // Sending the reply and handling the response
+              const sentMessage = await message.reply(response);
+              console.log('Reply sent successfully:', sentMessage.content);
+            } catch (error) {
+              console.error('Error:', error);
+            }
           } else {
               // Handle the case where a run is active - possibly queue the message or respond appropriately
               console.log('A run is currently active. Message will be queued or handled later.');
