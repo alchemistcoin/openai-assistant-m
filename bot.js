@@ -160,12 +160,16 @@ app.listen(port, () => {
   console.log(`HTTP server is listening on port ${port}`);
 });
 
-console.log('Starting bot...');
-client.login(process.env.DISCORD_TOKEN)
-    .then(() => console.log('Logged in successfully.'))
-    .catch(error => console.error('Error on login:', error));
+try {
+  console.log('Starting bot...');
+  client.login(process.env.DISCORD_TOKEN)
+  .then(() => console.log('Logged in successfully.'))
+  .catch(error => console.error('Error on login:', error));
 
-// When discord bot has started up
-client.once('ready', () => {
-  console.log('Bot is ready!');
-});
+  // When discord bot has started up
+  client.once('ready', () => {
+    console.log('Bot is ready!');
+  });
+} catch (error) {
+  console.error('Error:', error);
+}
