@@ -1,9 +1,8 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const { OpenAI } = require("openai");
-require("dotenv").config();
-
 const admin = require('firebase-admin');
 const express = require('express');
+// uncomment when running locally require("dotenv").config();
 
 // OpenAI Client
 const openai = new OpenAI({
