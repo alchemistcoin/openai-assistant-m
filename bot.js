@@ -2,10 +2,7 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const { OpenAI } = require("openai");
 const admin = require('firebase-admin');
 const express = require('express');
-/*
-// uncomment when running locally
 require("dotenv").config();
-*/
 
 // OpenAI Client
 const openai = new OpenAI({
@@ -161,7 +158,7 @@ app.listen(port, () => {
 });
 
 try {
-  console.log('Starting bot...');
+  console.log('Starting bot...', process.env.DISCORD_TOKEN);
   client.login(process.env.DISCORD_TOKEN)
   .then(() => console.log('Logged in successfully.'))
   .catch(error => console.error('Error on login:', error));
