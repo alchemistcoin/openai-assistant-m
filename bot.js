@@ -45,7 +45,7 @@ client.on('messageCreate', async (message) => {
     const discordThreadId = message.channel.id;
     const sessionID = await initiateOpenAiSession("MODEL_ID", message.content, discordThreadId);
 
-    const openaiResponse = await openai.createCompletion({
+    const openaiResponse = await openai.chat.completions.create({
       model: "gpt-4-1106-preview",
       prompt: message.content,
       // other params
