@@ -2,7 +2,10 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const { OpenAI } = require("openai");
 const admin = require('firebase-admin');
 const express = require('express');
-// uncomment when running locally require("dotenv").config();
+/*
+// uncomment when running locally
+require("dotenv").config();
+*/
 
 // OpenAI Client
 const openai = new OpenAI({
@@ -28,11 +31,6 @@ const db = admin.firestore();
 const sleep = (ms) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
-
-// When discord bot has started up
-client.once('ready', () => {
-  console.log('Bot is ready!');
-});
 
 const getOpenAiThreadId = async (discordThreadId) => {
     const docRef = db.collection('threads').doc(discordThreadId);
@@ -151,9 +149,6 @@ client.on('messageCreate', async message => {
     }
 });
 
-// Authenticate Discord
-client.login(process.env.DISCORD_TOKEN);
-
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -163,4 +158,14 @@ app.get('/', (req, res) => {
 
 app.listen(port, () => {
   console.log(`HTTP server is listening on port ${port}`);
+});
+
+console.log('Starting bot...');
+client.login(process.env.DISCORD_TOKEN)
+    .then(() => console.log('Logged in successfully.'))
+    .catch(error => console.error('Error on login:', error));
+
+// When discord bot has started up
+client.once('ready', () => {
+  console.log('Bot is ready!');
 });
