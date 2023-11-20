@@ -74,11 +74,30 @@ const isRunActive = async (openAiThreadId) => {
         return false;
     }
 }
-
+// This event will run every time a message is received
 client.on('messageCreate', async message => {
-    if (message.author.bot || !message.content || message.content === '') return; //Ignore bot messages
-    // Check if the bot is mentioned
+    // Ignore messages from bots
+    if (message.author.bot) return;
+
+    // Determine if the message is a DM or a mention of the bot in a server
+    const isDirectMessage = message.channel.type === 'DM';
     const botMentioned = message.mentions.users.has(client.user.id);
+
+    // Process if direct message or a mention
+    if (isDirectMessage || botMentioned) {
+        // Your existing 'getOpenAiThreadId', 'addThreadToMap', and message handling code here...
+        // Make sure to use 'await' properly with asynchronous function calls
+
+        try {
+            // Take action based on messagesLoaded and runActive flags and OpenAI API response
+            // ...
+        } catch (error) {
+            console.error('Error:', error);
+            // Reply with an error message to the user
+            await message.reply('I encountered an error while processing your request.');
+        }
+    }
+});
 
     // Check if the message is a reply and if it is in reply to the bot's message
     let isReplyToBot = false;
